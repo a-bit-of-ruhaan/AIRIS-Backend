@@ -1,0 +1,41 @@
+services:
+  # 1. The FastAPI Backend
+  - type: web
+    name: airis-api
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SERPAPI_API_KEY
+        sync: false
+
+  # 2. The Background Scheduler
+  - type: worker
+    name: airis-scheduler
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python scripts/scheduler.py"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SERPAPI_API_KEY
+        sync: false
+
+  # 3. The React Frontend
+  - type: web
+    name: airis-frontend
+    env: static
+    buildCommand: "cd frontend && npm install && npm run build"
+    staticPublishPath: "frontend/dist"
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: airis-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
